@@ -1,0 +1,57 @@
+#!/bin/sh
+# Corta el commit si se esta colando una credencial.
+#
+# El repositorio es publico, y en git borrar algo despues no basta: se queda en
+# el historial y hay que reescribirlo. Mas vale que no entre.
+#
+# Se instala una vez por copia del repositorio (los hooks no viajan al clonar):
+#
+#   git config core.hooksPath .githooks
+#
+# Si alguna vez hace falta saltarselo a sabiendas:  git commit --no-verify
+
+raiz=$(git rev-parse --show-toplevel)
+env="$raiz/secretos.env"
+malo=0
+
+# 1. Los archivos que no deben entrar NUNCA, aunque alguien los fuerce con
+#    "git add -f" y se haya saltado el .gitignore.
+for prohibido in secretos.env sketches/CaraIA/secretos.h; do
+    if git diff --cached --name-only | grep -qxF "$prohibido"; then
+        echo "BLOQUEADO: '$prohibido' lleva credenciales y no puede ir al repositorio."
+        malo=1
+    fi
+done
+
+# 2. Los valores que hay ahora mismo en secretos.env, buscados uno a uno en lo
+#    que se va a commitear. Esto es lo que de verdad pilla el fallo tipico:
+#    pegar la clave buena en el archivo de ejemplo.
+if [ -f "$env" ]; then
+    preparado=$(git diff --cached)
+    # El tr -d '\r' NO sobra. secretos.env se escribe desde Windows y viene con
+    # finales de linea CRLF, asi que sin esto cada valor se lee con un \r
+    # pegado al final y se busca "token\r", que no aparece jamas en el diff: el
+    # hook decia que todo estaba bien mientras dejaba pasar la credencial. Se
+    # descubrio porque la prueba de abajo colo un refresh token de verdad.
+    while IFS='=' read -r clave valor; do
+        clave=$(printf '%s' "$clave" | tr -d '\r' | tr -d '[:space:]')
+        valor=$(printf '%s' "$valor" | tr -d '\r')
+        case "$clave" in ''|\#*) continue ;; esac
+        # Solo los valores largos: los cortos dan falsos positivos con
+        # cualquier palabra suelta.
+        [ "${#valor}" -ge 16 ] || continue
+        if printf '%s' "$preparado" | grep -qF -- "$valor"; then
+            echo "BLOQUEADO: el valor de $clave aparece en lo que vas a commitear."
+            malo=1
+        fi
+    done < "$env"
+fi
+
+if [ "$malo" -ne 0 ]; then
+    echo ""
+    echo "Nada se ha commiteado. Las credenciales van en secretos.env (ignorado);"
+    echo "en secretos.env.ejemplo solo huecos."
+    exit 1
+fi
+
+exit 0

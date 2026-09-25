@@ -21,14 +21,18 @@ import sistema
 
 sistema.cargar_ajustes()        # SECRETS se resuelve al importar, ver abajo
 
-# Las credenciales viven en el otro proyecto, que es donde se autorizo. Eso vale
-# mientras los dos proyectos esten en el mismo ordenador; en el servidor Ubuntu
-# no hay ningun reloj, asi que se puede decir donde estan:
+# Las credenciales salen de secretos.env, que esta en .gitignore y es el unico
+# sitio donde deben estar:
 #
-#   export BUDDY_SPOTIFY_SECRETS=/home/javier/secretos/spotify.h
+#   BUDDY_SPOTIFY_CLIENT_ID=...
+#   BUDDY_SPOTIFY_REFRESH_TOKEN=...
 #
-# El archivo solo tiene que tener las lineas #define SPOTIFY_CLIENT_ID y
-# SPOTIFY_REFRESH_TOKEN; da igual de donde salga.
+# Antes se leian directamente del secrets.h del proyecto del reloj, que es donde
+# se autorizo en su dia. Funcionaba, pero ataba este proyecto a que el otro
+# estuviera al lado —en el servidor Ubuntu no hay ningun reloj— y dejaba una
+# credencial viva repartida por dos sitios. Se sigue aceptando como respaldo
+# para no romper el montaje de siempre, pero manda el entorno: si esta en
+# secretos.env, el .h ni se abre.
 SECRETS = pathlib.Path(
     os.environ.get("BUDDY_SPOTIFY_SECRETS")
     or pathlib.Path.home() / "esp32c3-reloj" / "sketches" / "RelojSpotify" / "secrets.h")
@@ -36,7 +40,16 @@ SECRETS = pathlib.Path(
 _TOKEN = {"valor": None, "caduca": 0.0}
 
 
-def credenciales():
+def _del_entorno():
+    ident = os.environ.get("BUDDY_SPOTIFY_CLIENT_ID", "").strip()
+    refresco = os.environ.get("BUDDY_SPOTIFY_REFRESH_TOKEN", "").strip()
+    if ident and refresco and not ident.startswith("<"):
+        return ident, refresco
+    return None
+
+
+def _del_header():
+    """Respaldo: el secrets.h del reloj, donde se autorizo en su dia."""
     if not SECRETS.is_file():
         return None
     texto = SECRETS.read_text(encoding="utf-8")
@@ -46,6 +59,10 @@ def credenciales():
     if not ident or not refresco or ident.startswith("PON_AQUI"):
         return None
     return ident, refresco
+
+
+def credenciales():
+    return _del_entorno() or _del_header()
 
 
 def disponible():

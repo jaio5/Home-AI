@@ -90,8 +90,30 @@ ahora mismo.
 - **Red local.** La regla del firewall está acotada a `LocalSubnet` a propósito.
   No le abras un puerto en el router. Si el servidor acaba fuera de casa, eso se
   hace por VPN.
-- `secretos.h` (contraseña del WiFi) y `secretos.env` (la ficha) están en
-  `.gitignore`. Sus plantillas vacías sí se versionan.
+
+### Dónde van las claves
+
+**Todas en `secretos.env`**, que está en `.gitignore`: la ficha del agente y las
+credenciales de Spotify. En `secretos.env.ejemplo`, que sí se versiona, solo
+huecos. La contraseña del WiFi va en `sketches/CaraIA/secretos.h`, también
+ignorado.
+
+Como el repositorio es público y en git borrar algo después no basta —se queda
+en el historial—, hay un hook que corta el commit si una clave se cuela.
+Actívalo una vez por copia del repositorio:
+
+```
+git config core.hooksPath .githooks
+```
+
+Comprueba dos cosas: que no entren `secretos.env` ni `secretos.h` (ni forzados
+con `git add -f`), y que ningún valor de `secretos.env` aparezca en lo que vas a
+commitear. Eso último es lo que pilla el error típico: pegar la clave buena en
+el archivo de ejemplo.
+
+El refresh token de Spotify es una credencial **viva**: con él se entra a tu
+cuenta sin contraseña y no caduca hasta que lo revoques, en
+[spotify.com/account/apps](https://www.spotify.com/account/apps/).
 
 ## Cosas que costaron encontrar
 
