@@ -2,18 +2,25 @@
 #
 #   python -m pip install -r requirements.txt
 #
-# Las versiones son las que funcionan aqui. Si algo se rompe al actualizar, este
-# archivo dice a que volver.
+# Los minimos son >= y no ==, a proposito. Clavar la version exacta suena a
+# prudente y aqui es lo contrario: el servidor Ubuntu llevara el Python que
+# traiga su version (24.04 trae 3.12, 22.04 trae 3.10) y una version clavada
+# que no tenga rueda para ese Python hace que la instalacion falle entera.
+#
+# Estas son las versiones con las que se ha probado, por si algun dia hay que
+# volver a un sitio conocido:
+#   edge-tts 7.2.8 · piper-tts 1.7.0 · faster-whisper 1.2.1 · sounddevice 0.5.6
+#   soundfile 0.14.0 · numpy 2.5.2 · pillow 12.2.0 · pyserial 3.5
 
 # ---- lo que hace falta en las dos maquinas --------------------------------
-edge-tts==7.2.8                 # voz neuronal (castellana)
-piper-tts==1.7.0                # voz local de respaldo, sin internet
-faster-whisper==1.2.1           # transcripcion
-sounddevice==0.5.6              # microfono y altavoces
-soundfile==0.14.0
-numpy==2.5.2
-pillow==12.2.0                  # recorta la captura antes de mandarla al modelo
-pyserial==3.5                   # la cara por cable USB (por WiFi no hace falta)
+edge-tts>=7.0                   # voz neuronal (castellana)
+piper-tts>=1.7                  # voz local de respaldo, sin internet
+faster-whisper>=1.2             # transcripcion
+sounddevice>=0.5                # microfono y altavoces
+soundfile>=0.13
+numpy>=1.26
+pillow>=10.0                    # recorta la captura antes de mandarla al modelo
+pyserial>=3.5                   # la cara por cable USB (por WiFi no hace falta)
 
 # ---- solo Windows ---------------------------------------------------------
 # El agente (agente_pc.py) los necesita; el servidor Ubuntu no, y pip los salta
@@ -21,12 +28,12 @@ pyserial==3.5                   # la cara por cable USB (por WiFi no hace falta)
 #
 # pycaw es el volumen. Los winrt son los que leen y controlan lo que suena en el
 # sistema (Spotify, el navegador, lo que sea) sin pedirle permiso a nadie.
-pycaw==20251023                 ; sys_platform == "win32"
-winrt-runtime==3.2.1            ; sys_platform == "win32"
-winrt-Windows.Foundation==3.2.1 ; sys_platform == "win32"
-winrt-Windows.Foundation.Collections==3.2.1 ; sys_platform == "win32"
-winrt-Windows.Media.Control==3.2.1          ; sys_platform == "win32"
-winrt-Windows.Storage.Streams==3.2.1        ; sys_platform == "win32"
+pycaw>=20240210                 ; sys_platform == "win32"
+winrt-runtime>=3.0              ; sys_platform == "win32"
+winrt-Windows.Foundation>=3.0   ; sys_platform == "win32"
+winrt-Windows.Foundation.Collections>=3.0 ; sys_platform == "win32"
+winrt-Windows.Media.Control>=3.0          ; sys_platform == "win32"
+winrt-Windows.Storage.Streams>=3.0        ; sys_platform == "win32"
 
 # ---- GPU (opcional pero muy recomendable) ---------------------------------
 # Sin esto Whisper transcribe en CPU: con el modelo grande, de medio segundo se

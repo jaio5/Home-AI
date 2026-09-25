@@ -1,0 +1,13 @@
+# Estos archivos acaban ejecutandose en Linux, y bash con finales de linea de
+# Windows (CRLF) falla con un error que no se parece en nada al problema real:
+# dice cosas como "\r: command not found" o directamente "no such file or
+# directory" sobre un archivo que esta ahi delante. Se fuerza LF y ya.
+*.sh        text eol=lf
+*.service   text eol=lf
+
+# Estos solo corren en Windows, donde CRLF es lo natural.
+*.cmd       text eol=crlf
+*.bat       text eol=crlf
+
+# El modelo de voz de Piper es binario: que git no lo toque.
+*.onnx      binary

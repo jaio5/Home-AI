@@ -24,9 +24,15 @@ import time
 # El guardia no es por gusto: ni ctypes.wintypes ni ctypes.windll existen fuera
 # de Windows, y como estaban sueltos arriba bastaban para que el buddy entero no
 # llegase ni a arrancar en Linux.
-HAY_ESCRITORIO = sys.platform == "win32"
+#
+# OJO con el nombre: esto NO es "hay pantalla" (para eso esta
+# sistema.HAY_ESCRITORIO, que es otra cosa y en WSL da True). Esto es, muy
+# concretamente, si se puede preguntar por la ventana que tiene el foco, y eso
+# es una API de Windows y de nadie mas. Los dos se llamaban igual y significaban
+# cosas distintas, que es como se cuelan los errores tontos.
+HAY_VENTANAS = sys.platform == "win32"
 
-if HAY_ESCRITORIO:
+if HAY_VENTANAS:
     import ctypes.wintypes as tipos
     _u32 = ctypes.windll.user32
     _k32 = ctypes.windll.kernel32
@@ -57,7 +63,7 @@ NOMBRES = {
 
 def _ventana_activa():
     """(aplicacion, titulo) de la ventana que tiene el foco."""
-    if not HAY_ESCRITORIO:
+    if not HAY_VENTANAS:
         return None, None
     ventana = _u32.GetForegroundWindow()
     if not ventana:
@@ -98,7 +104,7 @@ class Vigia:
         self._parar = threading.Event()
 
     def arrancar(self):
-        if not HAY_ESCRITORIO:
+        if not HAY_VENTANAS:
             print("[vigia] sin escritorio que mirar; no se en que andas")
             return
         threading.Thread(target=self._bucle, daemon=True).start()

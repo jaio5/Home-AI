@@ -8,6 +8,7 @@ conversacion.
 
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 
@@ -51,24 +52,40 @@ def abrir(ruta):
 
     os.startfile solo existe en Windows; fuera de alli hay que llamar al
     lanzador del escritorio. Devuelve None si ha ido bien, o el motivo si no.
+
+    Lo que se devuelva acaba DICHO EN VOZ ALTA, asi que tiene que ser una frase
+    y no el error del sistema: "[Errno 2] No such file or directory: 'xdg-open'"
+    no le sirve a nadie escuchandolo desde el sofa.
     """
     destino = str(ruta)
     if not HAY_ESCRITORIO:
         return ("no hay escritorio en esta maquina, asi que no puedo abrir "
                 "nada en pantalla")
+
+    if WINDOWS:
+        lanzador = None
+    elif MAC:
+        lanzador = "open"
+    else:
+        # Que DISPLAY este puesto no significa que haya con que abrir nada: en
+        # WSL, por ejemplo, hay DISPLAY y no hay xdg-open. Se comprueba antes de
+        # intentarlo para poder explicarlo en condiciones.
+        lanzador = shutil.which("xdg-open")
+        if not lanzador:
+            return ("en esta maquina no hay ningun programa para abrir "
+                    "archivos (falta xdg-open)")
+
     try:
         if WINDOWS:
             os.startfile(destino)                          # noqa: S606
-        elif MAC:
-            subprocess.Popen(["open", destino])
         else:
-            # Popen y no run: xdg-open devuelve enseguida, pero con algunos
+            # Popen y no run: el lanzador devuelve enseguida, pero con algunos
             # escritorios se queda colgado del proceso hijo y no queremos que
             # eso frene la conversacion.
-            subprocess.Popen(["xdg-open", destino],
+            subprocess.Popen([lanzador, destino],
                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     except (OSError, AttributeError) as e:
-        return str(e)
+        return f"no he podido abrirlo ({e})"
     return None
 
 
