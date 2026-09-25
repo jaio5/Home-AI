@@ -39,7 +39,19 @@ COLA_PREVIA = 12              # tramos guardados de ANTES de detectar la voz
 # Lo que el modelo espera oir. Sesga la transcripcion hacia el castellano
 # conversacional y hacia las palabras que se usan aqui; sin esto, "companero"
 # acaba siendo "Kampaneru" y los nombres tecnicos se convierten en cualquier cosa.
-CONTEXTO = ("Conversacion en espanol de Espana con un asistente de voz. "
+#
+# El nombre del asistente va aqui dentro, y no es un detalle: hay que decirlo
+# para que le haga caso, asi que si Whisper lo transcribe mal no le hablas
+# nunca. Un nombre propio corto y raro es justo lo que peor se le da a un
+# transcriptor... salvo que se lo nombres antes, que es lo que hace esta pista.
+import os                                                       # noqa: E402
+import sistema                                                  # noqa: E402
+
+sistema.cargar_ajustes()
+_NOMBRE = (os.environ.get("BUDDY_NOMBRE") or "Nova").strip()
+
+CONTEXTO = (f"Conversacion en espanol de Espana con {_NOMBRE}, un asistente de "
+            f"voz al que se llama por su nombre: {_NOMBRE}. "
             "Se habla de musica, peliculas, series, el ordenador, la pantalla, "
             "el volumen, las luces y las camaras de casa.")
 

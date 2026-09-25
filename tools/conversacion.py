@@ -136,6 +136,26 @@ async def _decir(cerebro, historial, voz, cara, oido, llamadas, con_herramientas
     return " ".join(dicho)
 
 
+async def decir_suelto(texto, voz, cara, oido):
+    """Dice una frase fija, sin preguntarle nada al modelo.
+
+    Para lo que tiene que salir INMEDIATO: responder a que te llamen por su
+    nombre y despedirse. Pasar por el modelo cuesta un par de segundos, y en un
+    "¿Nova?" - "dime" esos dos segundos se notan muchisimo; es la diferencia
+    entre algo que esta atento y algo que hay que esperar.
+    """
+    oido.ensordecer(True)
+    try:
+        audio, frec = await voz.sintetizar(texto)
+        cara.estado(C.HABLANDO)
+        await _reproducir(audio, frec, cara)
+    finally:
+        sd.stop()
+        await asyncio.sleep(0.3)           # cola de reverberacion del altavoz
+        oido.ensordecer(False)
+    return texto
+
+
 async def responder(cerebro, voz, cara, oido, historial):
     """Un turno completo, con herramientas si el modelo las pide.
 

@@ -34,24 +34,41 @@ PUERTO = 11434
 _MANUAL = os.environ.get("BUDDY_OLLAMA", "").strip()
 
 
+def _cuantos_modelos(url):
+    """Cuantos modelos tiene ese Ollama. -1 si ni siquiera contesta."""
+    try:
+        with urllib.request.urlopen(f"{url}/api/tags", timeout=1.5) as r:
+            return len(json.load(r).get("models", []))
+    except Exception:
+        return -1
+
+
 def _buscar_ollama():
+    """Cual de los Ollama que hay a mano es el bueno.
+
+    No basta con que alguien conteste en el puerto. Es facil acabar con DOS
+    Ollama: el nativo de Windows y el que corre dentro de WSL, y en este equipo
+    paso exactamente eso, con los modelos solo en el de WSL. Quedandose con el
+    primero que acepta la conexion se elegia el de Windows, vacio, y el
+    companero avisaba de que "falta qwen3:8b" teniendolo instalado al lado.
+
+    Asi que se mira quien tiene modelos y ese gana. Si ninguno tiene, vale el
+    que al menos conteste: puede estar recien arrancado y descargandolos.
+    """
     if _MANUAL:
         return _MANUAL.rstrip("/")
+
+    vivo = None
     for anfitrion in CANDIDATOS:
-        crudo = anfitrion.strip("[]")
-        familia = socket.AF_INET6 if ":" in crudo else socket.AF_INET
-        s = socket.socket(familia, socket.SOCK_STREAM)
-        s.settimeout(0.4)
-        try:
-            s.connect((crudo, PUERTO))
-            return f"http://{anfitrion}:{PUERTO}"
-        except OSError:
-            continue
-        finally:
-            s.close()
+        url = f"http://{anfitrion}:{PUERTO}"
+        cuantos = _cuantos_modelos(url)
+        if cuantos > 0:
+            return url
+        if cuantos == 0 and vivo is None:
+            vivo = url
     # Nadie contesta. Se devuelve el habitual para que el aviso de revisar()
     # salga con una direccion que el usuario reconozca.
-    return f"http://{CANDIDATOS[0]}:{PUERTO}"
+    return vivo or f"http://{CANDIDATOS[0]}:{PUERTO}"
 
 
 URL_BASE = _buscar_ollama()

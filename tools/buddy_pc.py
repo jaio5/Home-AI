@@ -23,6 +23,7 @@ Uso:
 
 import asyncio
 import queue
+import random
 import re
 import sys
 import time
@@ -30,6 +31,7 @@ import time
 import actividad
 import cara as C
 import conversacion
+import despertar
 import herramientas
 from cara import Cara
 from cerebro import Cerebro
@@ -68,6 +70,14 @@ TAMANO_WHISPER = "large-v3-turbo"
 MICROFONO = "fifine"
 MEMORIA = 12                            # turnos que recuerda
 
+# Lo que contesta al llamarle y al despedirse. Van variadas porque oir siempre
+# exactamente lo mismo cansa enseguida, y van fijas (sin pasar por el modelo)
+# porque dos segundos de espera en un "dime" se notan muchisimo.
+ATIENDE = ("Dime.", "Que pasa?", "Aqui estoy.", "Dime, que necesitas?",
+           "Te escucho.", "Que quieres?")
+DESPEDIDAS = ("Hasta luego.", "Nos vemos.", "Adios, aqui sigo.",
+              "Venga, hasta ahora.", "Hasta luego, llamame cuando quieras.")
+
 # Dos lecciones aprendidas a base de probarlo:
 #   - Todo en afirmativo. Al prohibirle expresamente decir que era un reloj,
 #     contestaba "no soy un reloj" en cada frase: nombrar lo que no quieres es
@@ -75,10 +85,10 @@ MEMORIA = 12                            # turnos que recuerda
 #   - Sin el nombre del usuario en tercera persona. Con él puesto, acababa
 #     respondiendo "soy Javier" y confundiéndose con quien le hablaba.
 CARACTER = (
+    f"Te llamas {despertar.NOMBRE}. "
     "Eres la inteligencia artificial que vive en este ordenador. "
     "Te asomas al mundo por una pantalla pequena y redonda que hay sobre la "
     "mesa, y esa pantalla es tu cara. "
-    "Si te preguntan como te llamas, eres simplemente la IA de este ordenador. "
     "Hablas espanol de Espana y tratas de tu a tu interlocutor. "
     "Lo que dices se lee en voz alta: texto corrido, sin listas, sin markdown, "
     "sin emojis y sin acciones entre asteriscos. "
@@ -97,8 +107,9 @@ CARACTER = (
 # en sus respuestas, como si le hubieran preguntado por su currículum.
 EJEMPLOS = [
     {"role": "user", "content": "Que eres?"},
-    {"role": "assistant", "content": "La inteligencia artificial de tu ordenador. "
-                                     "Esa pantallita redonda de la mesa es mi cara."},
+    {"role": "assistant", "content": f"{despertar.NOMBRE}, la inteligencia artificial "
+                                     "de tu ordenador. Esa pantallita redonda de la "
+                                     "mesa es mi cara."},
     {"role": "user", "content": "Estoy cansado."},
     {"role": "assistant", "content": "Pues cierra el portatil y vete a dar una vuelta. "
                                      "Aqui sigo cuando vuelvas."},
@@ -266,10 +277,14 @@ async def main():
     asyncio.create_task(asyncio.to_thread(herramientas.precalentar_vision))
 
     oido = await preparar_oido()
-    estado = {"valor": C.ESCUCHANDO}
-    cara.estado(C.ESCUCHANDO)
+    vigilia = despertar.Vigilia()
+    # Dormido: la cara en reposo. Es el mismo estado que usa cuando no hay nadie
+    # al otro lado, y funciona igual de bien aqui: se le nota que no esta atento.
+    estado = {"valor": C.REPOSO}
+    cara.estado(C.REPOSO)
     vigilante = asyncio.create_task(latido(cara, oido, lambda: estado["valor"]))
-    print("\nHablale cuando quieras. Ctrl+C para salir.\n")
+    print(f"\nLlamale por su nombre ({vigilia.nombre}) para empezar, y dile "
+          f"adios para terminar.\nCtrl+C para salir.\n")
 
     historial = []
     try:
@@ -278,8 +293,17 @@ async def main():
                 estado["valor"] = C.HABLANDO
                 await turno(cerebro, voz, cara, oido, historial,
                             f"(Ha vencido el aviso de {motivo}. Avisame en una frase.)")
+                # Un aviso le despierta: si te acaba de hablar, lo natural es
+                # poder contestarle sin volver a llamarle por su nombre.
+                vigilia.despertar()
                 estado["valor"] = C.ESCUCHANDO
                 cara.estado(C.ESCUCHANDO)
+
+            if vigilia.se_ha_aburrido():
+                vigilia.dormir()
+                print(f"[{vigilia.nombre}] se duerme; llamale por su nombre")
+                estado["valor"] = C.REPOSO
+                cara.estado(C.REPOSO)
 
             try:
                 frase = oido.frases.get_nowait()
@@ -287,8 +311,35 @@ async def main():
                 await asyncio.sleep(0.05)
                 continue
 
-            estado["valor"] = C.PENSANDO
-            await turno(cerebro, voz, cara, oido, historial, frase)
+            accion, texto = vigilia.oye(frase)
+
+            if accion == "nada":
+                # Se oye pero no va con el. Se deja constancia para poder
+                # entender por que no contesta, que si no parece averiado.
+                print(f"[ignorado] {frase}")
+                continue
+
+            if accion == "saluda":
+                estado["valor"] = C.HABLANDO
+                cara.emocion(C.FELIZ)
+                await conversacion.decir_suelto(
+                    random.choice(ATIENDE), voz, cara, oido)
+            elif accion == "despide":
+                estado["valor"] = C.HABLANDO
+                cara.emocion(C.FELIZ)
+                await conversacion.decir_suelto(
+                    random.choice(DESPEDIDAS), voz, cara, oido)
+                historial.clear()          # la proxima charla empieza limpia
+                print(f"[{vigilia.nombre}] hasta luego")
+                cara.emocion(C.NEUTRO)
+                estado["valor"] = C.REPOSO
+                cara.estado(C.REPOSO)
+                oido.vaciar()
+                continue
+            else:
+                estado["valor"] = C.PENSANDO
+                await turno(cerebro, voz, cara, oido, historial, texto)
+
             estado["valor"] = C.ESCUCHANDO
             cara.estado(C.ESCUCHANDO)
             oido.vaciar()          # descarta lo colado mientras respondia

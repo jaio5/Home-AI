@@ -16,6 +16,28 @@ en local: nada de lo que dices sale de casa.
 Las tres piezas son opcionales por separado: todo junto en el Windows también
 funciona, y es como está montado por defecto.
 
+## Cómo se le habla
+
+Hay que **llamarle por su nombre** para que empiece a atender, y decirle
+**"adiós"** o **"hasta luego"** para que se calle. Mientras estáis hablando no
+hace falta repetir el nombre, y si le dejas callado minuto y medio se duerme
+solo.
+
+```
+BUDDY_NOMBRE=Nova          en secretos.env
+```
+
+Esto no es un adorno: sin ello contesta a todo lo que oye, y en una habitación
+con la tele puesta es insufrible —en las pruebas se pasó un rato entero
+respondiendo a "gracias por ver el vídeo".
+
+El nombre se compara con tolerancia a erratas, porque el problema real no es que
+tú lo digas mal sino que Whisper lo oiga mal. Por eso **elige un nombre que se
+transcriba bien**: dos sílabas, que suene a palabra española y que no se parezca
+a algo que digas a menudo. `Nova`, `Aira` y `Lumo` van bien; iniciales sueltas o
+nombres en inglés, mal. El nombre se le pasa además a Whisper como pista, que es
+lo que de verdad arregla el problema de raíz.
+
 ## Lo que cada trozo puede y no puede hacer
 
 **La placa es cara y táctil, nada más.** No lleva micrófono, ni altavoz, ni
