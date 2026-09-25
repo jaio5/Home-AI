@@ -1,0 +1,38 @@
+# El companero como servicio en el servidor Ubuntu, para que arranque solo.
+#
+#   sudo cp companero.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now companero
+#   journalctl -u companero -f          <- para ver que dice
+#
+# Ajusta User y las rutas si no lo tienes en /home/javier/esp32-buddy.
+
+[Unit]
+Description=Companero de IA (cerebro, voz y cara)
+# El cerebro es Ollama: sin el, arranca y se cae. Y sin red no encuentra ni a
+# Ollama ni al agente del PC.
+After=network-online.target ollama.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=javier
+WorkingDirectory=/home/javier/esp32-buddy
+ExecStart=/home/javier/esp32-buddy/.venv/bin/python -u tools/buddy_pc.py
+
+# La ficha y lo demas salen de secretos.env, que el propio programa lee. No hace
+# falta repetirlo aqui.
+
+Restart=on-failure
+RestartSec=10
+
+# El microfono y los altavoces son del usuario que ha iniciado sesion, asi que
+# el servicio necesita llegar a su servidor de audio.
+Environment=PULSE_SERVER=unix:/run/user/1000/pulse/native
+Environment=PYTHONUNBUFFERED=1
+
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

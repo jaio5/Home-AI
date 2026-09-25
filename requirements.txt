@@ -1,0 +1,45 @@
+# Dependencias del companero. Instalar con:
+#
+#   python -m pip install -r requirements.txt
+#
+# Las versiones son las que funcionan aqui. Si algo se rompe al actualizar, este
+# archivo dice a que volver.
+
+# ---- lo que hace falta en las dos maquinas --------------------------------
+edge-tts==7.2.8                 # voz neuronal (castellana)
+piper-tts==1.7.0                # voz local de respaldo, sin internet
+faster-whisper==1.2.1           # transcripcion
+sounddevice==0.5.6              # microfono y altavoces
+soundfile==0.14.0
+numpy==2.5.2
+pillow==12.2.0                  # recorta la captura antes de mandarla al modelo
+pyserial==3.5                   # la cara por cable USB (por WiFi no hace falta)
+
+# ---- solo Windows ---------------------------------------------------------
+# El agente (agente_pc.py) los necesita; el servidor Ubuntu no, y pip los salta
+# solo gracias al marcador.
+#
+# pycaw es el volumen. Los winrt son los que leen y controlan lo que suena en el
+# sistema (Spotify, el navegador, lo que sea) sin pedirle permiso a nadie.
+pycaw==20251023                 ; sys_platform == "win32"
+winrt-runtime==3.2.1            ; sys_platform == "win32"
+winrt-Windows.Foundation==3.2.1 ; sys_platform == "win32"
+winrt-Windows.Foundation.Collections==3.2.1 ; sys_platform == "win32"
+winrt-Windows.Media.Control==3.2.1          ; sys_platform == "win32"
+winrt-Windows.Storage.Streams==3.2.1        ; sys_platform == "win32"
+
+# ---- GPU (opcional pero muy recomendable) ---------------------------------
+# Sin esto Whisper transcribe en CPU: con el modelo grande, de medio segundo se
+# va a varios por frase. Con tarjeta NVIDIA:
+#
+#   python -m pip install nvidia-cublas-cu12 nvidia-cudnn-cu12
+#
+# En Linux hay que cargarlas a mano y de eso ya se encarga sistema.preparar_cuda.
+
+# ---- lo que NO se instala con pip -----------------------------------------
+# Ollama, que es el cerebro:      https://ollama.com/download
+#   ollama pull qwen3:8b          el que piensa y habla
+#   ollama pull moondream         el que mira la pantalla
+#
+# La voz local de Piper (60 MB), en tools/voces/:
+#   https://huggingface.co/rhasspy/piper-voices  ->  es/es_ES/davefx/medium

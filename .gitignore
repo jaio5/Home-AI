@@ -1,0 +1,19 @@
+# --- credenciales -----------------------------------------------------------
+# secretos.h lleva la contrasena de la WiFi. La plantilla vacia si se versiona:
+# secretos.ejemplo.h
+sketches/CaraIA/secretos.h
+
+# secretos.env lleva la ficha del agente, que es lo unico que impide que
+# cualquiera de la red le mande recados al PC. Plantilla: secretos.env.ejemplo
+secretos.env
+
+# --- modelos de voz ---------------------------------------------------------
+# Las voces de Piper pesan decenas de MB y se descargan solas. De donde salen:
+#   https://huggingface.co/rhasspy/piper-voices  (es/es_ES/davefx/medium)
+tools/voces/*.onnx
+tools/voces/*.onnx.json
+
+# --- temporales -------------------------------------------------------------
+__pycache__/
+*.pyc
+*.log
